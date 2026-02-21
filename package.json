@@ -4,7 +4,8 @@
   "description": "A party-based dark fantasy browser dungeon crawler",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "postinstall": "npm rebuild better-sqlite3"
   },
   "engines": {
     "node": ">=18"
