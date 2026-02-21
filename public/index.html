@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
   <style>
     /* ── Reset & Base ─────────────────────────────────────────────── */
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -275,25 +276,6 @@
       margin-bottom: 1.2rem;
     }
 
-    /* ── Placeholder screen ───────────────────────────────────────── */
-    .placeholder-text {
-      text-align: center;
-      margin: 1.2rem 0 1.5rem;
-      font-size: 0.75rem;
-      letter-spacing: 0.08em;
-      color: var(--text-dim);
-      line-height: 2;
-    }
-
-    .placeholder-soon {
-      font-size: 0.62rem;
-      letter-spacing: 0.2em;
-      color: var(--text-faint);
-      text-align: center;
-      text-transform: uppercase;
-      margin-bottom: 1.5rem;
-    }
-
     /* ── Loading screen ───────────────────────────────────────────── */
     .loading-text {
       font-size: 0.7rem;
@@ -402,25 +384,106 @@
     </div>
   </div>
 
-  <!-- ── SCREEN: Placeholder (no save) ─────────────────────────────── -->
-  <div id="screen-placeholder" class="screen" hidden>
-    <div class="card">
-      <p class="title-ornament">✦ ✦ ✦</p>
-      <h2 class="title" style="font-size:1rem; letter-spacing:0.15em;">
-        The Tomb Awaits
-      </h2>
-      <p class="title-divider">─── ✦ ───</p>
+  <!-- ── SCREEN: Character Select ──────────────────────────────────── -->
+  <div id="screen-char-select" class="screen screen-fullpage" hidden>
+    <p class="char-select-title">Choose Your Champion</p>
+    <p class="char-select-sub">── ✦ ── The whole party descends together ── ✦ ──</p>
+    <div id="char-cards"></div>
+    <button id="btn-confirm-char" class="btn btn-primary" type="button" disabled>
+      ⚔ Enter the Tomb
+    </button>
+  </div>
 
-      <div class="placeholder-text">
-        <span id="placeholder-greeting"></span><br>
-        The five seals hold.<br>
-        Infernadax stirs beneath.
+  <!-- ── SCREEN: Dungeon ───────────────────────────────────────────── -->
+  <div id="screen-dungeon" class="screen-fullpage" hidden>
+    <!-- Top HUD bar -->
+    <div class="hud-topbar">
+      <span class="hud-floor" id="hud-floor-label">Floor 1</span>
+      <span class="hud-days" id="hud-days-label">7 days</span>
+      <span class="hud-gold" id="hud-gold-label">0 gp</span>
+    </div>
+
+    <!-- Canvas -->
+    <div class="canvas-wrap">
+      <canvas id="dungeon-canvas"></canvas>
+    </div>
+
+    <!-- D-pad (mobile) -->
+    <div class="dpad">
+      <div></div>
+      <button class="dpad-btn" id="dpad-up" aria-label="Move forward">↑</button>
+      <div></div>
+      <button class="dpad-btn" id="dpad-left" aria-label="Turn left">←</button>
+      <div class="dpad-center"></div>
+      <button class="dpad-btn" id="dpad-right" aria-label="Turn right">→</button>
+      <div></div>
+      <button class="dpad-btn" id="dpad-down" aria-label="Move backward">↓</button>
+      <div></div>
+    </div>
+
+    <!-- Party strip (mobile) -->
+    <div id="party-strip"></div>
+
+    <!-- Message log -->
+    <div id="msg-log">
+      <p class="msg-line msg-line-1" id="msg-line-1">&nbsp;</p>
+      <p class="msg-line msg-line-2" id="msg-line-2">&nbsp;</p>
+    </div>
+
+    <!-- Party panel (desktop) -->
+    <div id="party-panel"></div>
+  </div>
+
+  <!-- ── SCREEN: Combat ────────────────────────────────────────────── -->
+  <div id="screen-combat" class="screen-fullpage" hidden>
+    <div class="combat-commands-wrap" style="display:contents">
+      <!-- Header -->
+      <div class="combat-header">
+        <span class="combat-floor-label" id="combat-floor-label">⚔ Combat</span>
+        <span class="combat-round-label" id="combat-round-label">Round 1</span>
       </div>
 
-      <p class="placeholder-soon">Character Select — coming soon</p>
+      <!-- Enemy area -->
+      <div id="enemy-area"></div>
 
-      <button id="btn-signout" class="btn btn-danger" type="button">
-        Leave the Tomb
+      <!-- Phase label -->
+      <div class="combat-phase-label" id="combat-phase-label">Set Commands</div>
+
+      <!-- Command list -->
+      <div id="command-list"></div>
+
+      <!-- Resolve button -->
+      <button id="btn-resolve" class="btn btn-primary" type="button" disabled>
+        ⚔ Resolve
+      </button>
+
+      <!-- Combat log -->
+      <div id="combat-log"></div>
+    </div>
+
+    <!-- Bottom sheet: command picker -->
+    <div id="sheet-overlay"></div>
+    <div id="combat-sheet">
+      <p class="sheet-title" id="sheet-char-name">Choose Action</p>
+      <div id="sheet-actions"></div>
+      <button class="sheet-close" id="btn-sheet-close">Cancel</button>
+    </div>
+
+    <!-- Bottom sheet: character detail -->
+    <div id="char-sheet">
+      <p class="sheet-title" id="char-sheet-name">Character</p>
+      <div id="char-sheet-body"></div>
+      <button class="sheet-close" id="btn-char-sheet-close">Close</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN: Story Card ─────────────────────────────────────────── -->
+  <div id="screen-story" class="screen screen-fullpage" hidden>
+    <div class="story-card">
+      <p id="story-floor-label">Floor 1 → 2</p>
+      <div id="story-body"></div>
+      <button id="btn-story-continue" class="btn btn-primary" type="button">
+        Descend into Darkness
       </button>
     </div>
   </div>
@@ -428,11 +491,12 @@
   <script>
     // ── Screen management ─────────────────────────────────────────────
 
-    const screens = ['login', 'loading', 'resume', 'placeholder'];
+    const screens = ['login', 'loading', 'resume', 'char-select', 'dungeon', 'combat', 'story'];
 
     function showScreen(name) {
       screens.forEach(s => {
         const el = document.getElementById('screen-' + s);
+        if (!el) return;
         el.hidden = (s !== name);
       });
     }
@@ -479,18 +543,23 @@
 
     // ── Save check ────────────────────────────────────────────────────
 
+    window.pendingGameState = null;
+
     async function checkSave() {
       showScreen('loading');
       const res = await apiFetch('/api/save');
       if (!res) return; // 401 — already redirected to login
 
       if (res.ok) {
-        const { gameState, saved_at } = await res.json();
-        showResumeScreen(gameState, saved_at);
+        const data = await res.json();
+        window.pendingGameState = data.gameState;
+        showResumeScreen(data.gameState, data.saved_at);
       } else if (res.status === 404) {
-        showPlaceholder();
+        const username = localStorage.getItem('toi_username') || '';
+        initNewGame(username);
+        showScreen('char-select');
+        renderCharacterSelect();
       } else {
-        // Unexpected error — fall back to login
         clearToken();
         showScreen('login');
       }
@@ -516,15 +585,6 @@
       }
 
       showScreen('resume');
-    }
-
-    // ── Placeholder ───────────────────────────────────────────────────
-
-    function showPlaceholder() {
-      const username = localStorage.getItem('toi_username') || 'Adventurer';
-      document.getElementById('placeholder-greeting').textContent =
-        'Welcome, ' + username + '.';
-      showScreen('placeholder');
     }
 
     // ── Auth: Login ───────────────────────────────────────────────────
@@ -606,24 +666,21 @@
     // ── Resume: buttons ───────────────────────────────────────────────
 
     document.getElementById('btn-resume').addEventListener('click', () => {
-      // Phase 2: start actual game loop
-      alert('The game is being forged. Return soon.');
+      if (window.pendingGameState) {
+        startGame(window.pendingGameState);
+      }
     });
 
     document.getElementById('btn-start-fresh').addEventListener('click', async () => {
       if (!confirm('Abandon your current descent? This cannot be undone.')) return;
       const res = await apiFetch('/api/save', { method: 'DELETE' });
       if (res && res.ok) {
-        showPlaceholder();
+        window.pendingGameState = null;
+        const username = localStorage.getItem('toi_username') || '';
+        initNewGame(username);
+        showScreen('char-select');
+        renderCharacterSelect();
       }
-    });
-
-    // ── Placeholder: sign out ─────────────────────────────────────────
-
-    document.getElementById('btn-signout').addEventListener('click', () => {
-      clearToken();
-      localStorage.removeItem('toi_username');
-      showScreen('login');
     });
 
     // ── Bootstrap ─────────────────────────────────────────────────────
@@ -634,5 +691,6 @@
       showScreen('login');
     }
   </script>
+  <script src="game.js"></script>
 </body>
 </html>
