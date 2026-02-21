@@ -6,7 +6,7 @@ Lead a party of seven adventurers through five floors of the Tomb of Infernadax.
 Set commands for your whole party before each combat round resolves — then watch 
 the chaos unfold. Find the phylactery. Destroy it. Then kill the dragon.
 
-**Play it:** [tomb-of-infernadax.up.railway.app](https://tomb-of-infernadax.up.railway.app)
+**Play it:** [tomb-of-infernadax-production.up.railway.app](https://tomb-of-infernadax-production.up.railway.app)
 
 ## Stack
 - Plain HTML/CSS/JS frontend (no frameworks)
