@@ -3,11 +3,14 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const path = require('path');
-const db = require('./database');
+console.log('Starting: loading modules...');
+let express, bcrypt, jwt, path, db;
+try { express = require('express'); console.log('OK: express'); } catch(e) { console.error('FAIL: express', e.message); process.exit(1); }
+try { bcrypt = require('bcryptjs'); console.log('OK: bcryptjs'); } catch(e) { console.error('FAIL: bcryptjs', e.message); process.exit(1); }
+try { jwt = require('jsonwebtoken'); console.log('OK: jsonwebtoken'); } catch(e) { console.error('FAIL: jsonwebtoken', e.message); process.exit(1); }
+try { path = require('path'); console.log('OK: path'); } catch(e) { console.error('FAIL: path', e.message); process.exit(1); }
+try { db = require('./database'); console.log('OK: database'); } catch(e) { console.error('FAIL: database', e.message); process.exit(1); }
+console.log('All modules loaded. PORT=' + (process.env.PORT || 3000));
 
 const app = express();
 const PORT = process.env.PORT || 3000;
