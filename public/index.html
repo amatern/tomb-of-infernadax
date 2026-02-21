@@ -386,12 +386,16 @@
 
   <!-- ── SCREEN: Character Select ──────────────────────────────────── -->
   <div id="screen-char-select" class="screen screen-fullpage" hidden>
-    <p class="char-select-title">Choose Your Champion</p>
-    <p class="char-select-sub">── ✦ ── The whole party descends together ── ✦ ──</p>
-    <div id="char-cards"></div>
-    <button id="btn-confirm-char" class="btn btn-primary" type="button" disabled>
-      ⚔ Enter the Tomb
-    </button>
+    <div class="char-select-scroll">
+      <p class="char-select-title">Choose Your Champion</p>
+      <p class="char-select-sub">── ✦ ── The whole party descends together ── ✦ ──</p>
+      <div id="char-cards"></div>
+    </div>
+    <div class="char-select-footer">
+      <button id="btn-confirm-char" class="btn btn-primary" type="button" disabled>
+        ⚔ Enter the Tomb
+      </button>
+    </div>
   </div>
 
   <!-- ── SCREEN: Dungeon ───────────────────────────────────────────── -->
@@ -504,15 +508,26 @@
     // ── Auth helpers ──────────────────────────────────────────────────
 
     function getToken() {
-      return localStorage.getItem('toi_token');
+      try { return localStorage.getItem('toi_token'); } catch { return null; }
     }
 
     function setToken(token) {
-      localStorage.setItem('toi_token', token);
+      try { localStorage.setItem('toi_token', token); } catch {}
     }
 
     function clearToken() {
-      localStorage.removeItem('toi_token');
+      try {
+        localStorage.removeItem('toi_token');
+        localStorage.removeItem('toi_username');
+      } catch {}
+    }
+
+    function lsGet(key) {
+      try { return localStorage.getItem(key); } catch { return null; }
+    }
+
+    function lsSet(key, val) {
+      try { localStorage.setItem(key, val); } catch {}
     }
 
     async function apiFetch(path, options = {}) {
@@ -523,7 +538,12 @@
       const res = await fetch(path, { ...options, headers });
 
       if (res.status === 401) {
+        const savedName = lsGet('toi_username') || '';
         clearToken();
+        if (savedName) {
+          document.getElementById('auth-username').value = savedName;
+        }
+        setError('Your session has expired. Please sign in again.');
         showScreen('login');
         return null;
       }
@@ -555,7 +575,7 @@
         window.pendingGameState = data.gameState;
         showResumeScreen(data.gameState, data.saved_at);
       } else if (res.status === 404) {
-        const username = localStorage.getItem('toi_username') || '';
+        const username = lsGet('toi_username') || '';
         initNewGame(username);
         showScreen('char-select');
         renderCharacterSelect();
@@ -614,7 +634,7 @@
       const data = await res.json();
       if (res.ok) {
         setToken(data.token);
-        localStorage.setItem('toi_username', data.username);
+        lsSet('toi_username', data.username);
         await checkSave();
       } else {
         setError(data.error || 'The dungeon rejects you.');
@@ -648,7 +668,7 @@
       const data = await res.json();
       if (res.ok) {
         setToken(data.token);
-        localStorage.setItem('toi_username', data.username);
+        lsSet('toi_username', data.username);
         await checkSave();
       } else {
         setError(data.error || 'Registration failed.');
@@ -676,7 +696,7 @@
       const res = await apiFetch('/api/save', { method: 'DELETE' });
       if (res && res.ok) {
         window.pendingGameState = null;
-        const username = localStorage.getItem('toi_username') || '';
+        const username = lsGet('toi_username') || '';
         initNewGame(username);
         showScreen('char-select');
         renderCharacterSelect();

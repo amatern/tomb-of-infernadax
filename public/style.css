@@ -15,9 +15,25 @@
 
 /* ── Character Select ────────────────────────────────────────────────────── */
 #screen-char-select {
+  /* overflow stays hidden on the fixed container; scroll is on the child */
+}
+
+.char-select-scroll {
+  flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 1rem;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+}
+
+.char-select-footer {
+  padding: 0.6rem 1rem 0.75rem;
+  border-top: 1px solid var(--border-inner);
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
 }
 
 .char-select-title {
@@ -111,7 +127,6 @@
 #btn-confirm-char {
   width: 100%;
   max-width: 560px;
-  margin-bottom: 0.5rem;
 }
 
 /* ── Dungeon Screen ──────────────────────────────────────────────────────── */
