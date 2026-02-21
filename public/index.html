@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Tomb of Infernadax</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:           #0c0a08;
+      --card-bg:      #14100b;
+      --card-inner:   #0f0c09;
+      --border-outer: #4a3520;
+      --border-inner: #2a1e12;
+      --text:         #c9baa2;
+      --text-dim:     #7a6a54;
+      --text-faint:   #4a3f30;
+      --accent:       #c07830;
+      --accent-glow:  rgba(192, 120, 48, 0.25);
+      --accent-dim:   #8a5520;
+      --crimson:      #8b1a1a;
+      --crimson-bright: #c42b2b;
+      --input-bg:     #0a0806;
+      --btn-bg:       #1c1408;
+      --btn-hover:    #2c1e0c;
+      --btn-border:   #5a3e1e;
+      --btn-border-hover: #8a6030;
+      --shadow:       rgba(0, 0, 0, 0.6);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% 40%, #1a1208 0%, #0c0a08 70%);
+      color: var(--text);
+      font-family: 'Cinzel', Georgia, serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    /* ── Screens ──────────────────────────────────────────────────── */
+    .screen {
+      width: 100%;
+      max-width: 420px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Card ─────────────────────────────────────────────────────── */
+    .card {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border-outer);
+      box-shadow:
+        0 0 0 1px var(--border-inner),
+        0 8px 40px var(--shadow),
+        inset 0 1px 0 rgba(255,255,255,0.03);
+      padding: 2.5rem 2rem;
+      position: relative;
+    }
+
+    /* Corner ornaments */
+    .card::before, .card::after {
+      content: '✦';
+      position: absolute;
+      color: var(--border-outer);
+      font-size: 0.6rem;
+      line-height: 1;
+    }
+    .card::before { top: 6px; left: 8px; }
+    .card::after  { bottom: 6px; right: 8px; }
+
+    /* ── Title ────────────────────────────────────────────────────── */
+    .title-ornament {
+      text-align: center;
+      color: var(--accent-dim);
+      font-size: 0.7rem;
+      letter-spacing: 0.4em;
+      margin-bottom: 0.5rem;
+      opacity: 0.7;
+    }
+
+    .title {
+      font-family: 'Cinzel Decorative', 'Cinzel', serif;
+      font-size: clamp(1rem, 4vw, 1.3rem);
+      font-weight: 700;
+      text-align: center;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-shadow:
+        0 0 30px var(--accent-glow),
+        0 1px 2px rgba(0,0,0,0.8);
+      line-height: 1.3;
+      margin-bottom: 0.5rem;
+    }
+
+    .title-divider {
+      text-align: center;
+      color: var(--border-outer);
+      font-size: 0.65rem;
+      letter-spacing: 0.5em;
+      margin-bottom: 1.8rem;
+      opacity: 0.8;
+    }
+
+    /* ── Form elements ────────────────────────────────────────────── */
+    .field {
+      margin-bottom: 1.1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      color: var(--text-dim);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+    }
+
+    input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border-inner);
+      color: var(--text);
+      font-family: 'Cinzel', Georgia, serif;
+      font-size: 0.9rem;
+      padding: 0.7rem 0.85rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+    }
+
+    input:focus {
+      border-color: var(--accent-dim);
+      box-shadow: 0 0 0 1px var(--accent-dim), 0 0 10px var(--accent-glow);
+    }
+
+    input::placeholder {
+      color: var(--text-faint);
+    }
+
+    /* ── Buttons ──────────────────────────────────────────────────── */
+    .btn {
+      display: block;
+      width: 100%;
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
+      color: var(--text);
+      font-family: 'Cinzel', Georgia, serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 0.85rem 1rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+      min-height: 44px;
+      text-align: center;
+    }
+
+    .btn:hover, .btn:focus {
+      background: var(--btn-hover);
+      border-color: var(--btn-border-hover);
+      color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+      outline: none;
+    }
+
+    .btn:active {
+      background: #200e04;
+    }
+
+    .btn-primary {
+      border-color: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .btn-primary:hover, .btn-primary:focus {
+      border-color: var(--accent);
+      background: rgba(192, 120, 48, 0.1);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .btn-danger {
+      border-color: var(--crimson);
+      color: #c87070;
+      font-size: 0.7rem;
+    }
+
+    .btn-danger:hover, .btn-danger:focus {
+      background: rgba(139, 26, 26, 0.15);
+      border-color: var(--crimson-bright);
+      color: var(--crimson-bright);
+      box-shadow: 0 0 12px rgba(139, 26, 26, 0.3);
+    }
+
+    .btn-gap {
+      margin-top: 0.7rem;
+    }
+
+    /* ── Error / Message ──────────────────────────────────────────── */
+    .error-msg {
+      min-height: 1.4rem;
+      margin: 0.8rem 0 0.5rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      color: var(--crimson-bright);
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    /* ── Footer note ──────────────────────────────────────────────── */
+    .footnote {
+      margin-top: 1.5rem;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      color: var(--text-faint);
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    /* ── Resume screen specifics ──────────────────────────────────── */
+    .resume-info {
+      text-align: center;
+      margin: 1.2rem 0 1.5rem;
+      padding: 1rem;
+      border: 1px solid var(--border-inner);
+      background: var(--card-inner);
+    }
+
+    .resume-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.3em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+    }
+
+    .resume-value {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+
+    .resume-row {
+      display: flex;
+      gap: 1px;
+    }
+
+    .resume-cell {
+      flex: 1;
+      padding: 0.7rem 0.5rem;
+    }
+
+    .resume-cell + .resume-cell {
+      border-left: 1px solid var(--border-inner);
+    }
+
+    .resume-caption {
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      color: var(--text-dim);
+      text-align: center;
+      margin-bottom: 1.2rem;
+    }
+
+    /* ── Placeholder screen ───────────────────────────────────────── */
+    .placeholder-text {
+      text-align: center;
+      margin: 1.2rem 0 1.5rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      line-height: 2;
+    }
+
+    .placeholder-soon {
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      color: var(--text-faint);
+      text-align: center;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Loading screen ───────────────────────────────────────────── */
+    .loading-text {
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      color: var(--text-dim);
+      text-align: center;
+      text-transform: uppercase;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 1; }
+    }
+
+    /* ── Days remaining color ─────────────────────────────────────── */
+    .days-warn { color: #c87030; }
+    .days-danger { color: var(--crimson-bright); }
+  </style>
+</head>
+<body>
+
+  <!-- ── SCREEN: Login / Register ──────────────────────────────────── -->
+  <div id="screen-login" class="screen">
+    <div class="card">
+      <p class="title-ornament">✦ ✦ ✦</p>
+      <h1 class="title">Tomb of<br>Infernadax</h1>
+      <p class="title-divider">─── ✦ ───</p>
+
+      <div class="field">
+        <label for="auth-username">Username</label>
+        <input
+          id="auth-username"
+          type="text"
+          maxlength="20"
+          autocomplete="username"
+          autocapitalize="none"
+          spellcheck="false"
+          placeholder="your name, adventurer"
+        >
+      </div>
+
+      <div class="field">
+        <label for="auth-password">Password</label>
+        <input
+          id="auth-password"
+          type="password"
+          autocomplete="current-password"
+          placeholder="speak the words"
+        >
+      </div>
+
+      <div id="auth-error" class="error-msg" role="alert" aria-live="polite"></div>
+
+      <button id="btn-login" class="btn btn-primary" type="button">
+        ⚔ Enter the Tomb
+      </button>
+
+      <button id="btn-register" class="btn btn-gap" type="button">
+        Create Account
+      </button>
+
+      <p class="footnote">
+        No password recovery.<br>
+        Forget it, start anew.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── SCREEN: Loading ───────────────────────────────────────────── -->
+  <div id="screen-loading" class="screen" hidden>
+    <p class="loading-text">Descending&hellip;</p>
+  </div>
+
+  <!-- ── SCREEN: Resume ────────────────────────────────────────────── -->
+  <div id="screen-resume" class="screen" hidden>
+    <div class="card">
+      <p class="title-ornament">✦ ✦ ✦</p>
+      <h2 class="title" style="font-size:1rem; letter-spacing:0.15em;">
+        Your Descent Continues
+      </h2>
+      <p class="title-divider">─── ✦ ───</p>
+
+      <div class="resume-info">
+        <div class="resume-row">
+          <div class="resume-cell">
+            <p class="resume-label">Floor</p>
+            <p class="resume-value" id="resume-floor">—</p>
+          </div>
+          <div class="resume-cell">
+            <p class="resume-label">Days Remaining</p>
+            <p class="resume-value" id="resume-days">—</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="resume-caption" id="resume-saved-at"></p>
+
+      <button id="btn-resume" class="btn btn-primary" type="button">
+        ⚔ Resume Descent
+      </button>
+
+      <button id="btn-start-fresh" class="btn btn-gap btn-danger" type="button">
+        ✝ Start Fresh
+      </button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN: Placeholder (no save) ─────────────────────────────── -->
+  <div id="screen-placeholder" class="screen" hidden>
+    <div class="card">
+      <p class="title-ornament">✦ ✦ ✦</p>
+      <h2 class="title" style="font-size:1rem; letter-spacing:0.15em;">
+        The Tomb Awaits
+      </h2>
+      <p class="title-divider">─── ✦ ───</p>
+
+      <div class="placeholder-text">
+        <span id="placeholder-greeting"></span><br>
+        The five seals hold.<br>
+        Infernadax stirs beneath.
+      </div>
+
+      <p class="placeholder-soon">Character Select — coming soon</p>
+
+      <button id="btn-signout" class="btn btn-danger" type="button">
+        Leave the Tomb
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ── Screen management ─────────────────────────────────────────────
+
+    const screens = ['login', 'loading', 'resume', 'placeholder'];
+
+    function showScreen(name) {
+      screens.forEach(s => {
+        const el = document.getElementById('screen-' + s);
+        el.hidden = (s !== name);
+      });
+    }
+
+    // ── Auth helpers ──────────────────────────────────────────────────
+
+    function getToken() {
+      return localStorage.getItem('toi_token');
+    }
+
+    function setToken(token) {
+      localStorage.setItem('toi_token', token);
+    }
+
+    function clearToken() {
+      localStorage.removeItem('toi_token');
+    }
+
+    async function apiFetch(path, options = {}) {
+      const token = getToken();
+      const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      const res = await fetch(path, { ...options, headers });
+
+      if (res.status === 401) {
+        clearToken();
+        showScreen('login');
+        return null;
+      }
+
+      return res;
+    }
+
+    // ── Error display ─────────────────────────────────────────────────
+
+    function setError(msg) {
+      document.getElementById('auth-error').textContent = msg;
+    }
+
+    function clearError() {
+      document.getElementById('auth-error').textContent = '';
+    }
+
+    // ── Save check ────────────────────────────────────────────────────
+
+    async function checkSave() {
+      showScreen('loading');
+      const res = await apiFetch('/api/save');
+      if (!res) return; // 401 — already redirected to login
+
+      if (res.ok) {
+        const { gameState, saved_at } = await res.json();
+        showResumeScreen(gameState, saved_at);
+      } else if (res.status === 404) {
+        showPlaceholder();
+      } else {
+        // Unexpected error — fall back to login
+        clearToken();
+        showScreen('login');
+      }
+    }
+
+    // ── Resume screen ─────────────────────────────────────────────────
+
+    function showResumeScreen(gameState, saved_at) {
+      const floor = gameState.floor || 1;
+      const days = gameState.daysRemaining ?? 7;
+
+      document.getElementById('resume-floor').textContent = floor + ' / 5';
+
+      const daysEl = document.getElementById('resume-days');
+      daysEl.textContent = days + (days === 1 ? ' day' : ' days');
+      daysEl.className = 'resume-value' +
+        (days <= 1 ? ' days-danger' : days <= 2 ? ' days-warn' : '');
+
+      if (saved_at) {
+        const d = new Date(saved_at);
+        document.getElementById('resume-saved-at').textContent =
+          'Last saved ' + d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      }
+
+      showScreen('resume');
+    }
+
+    // ── Placeholder ───────────────────────────────────────────────────
+
+    function showPlaceholder() {
+      const username = localStorage.getItem('toi_username') || 'Adventurer';
+      document.getElementById('placeholder-greeting').textContent =
+        'Welcome, ' + username + '.';
+      showScreen('placeholder');
+    }
+
+    // ── Auth: Login ───────────────────────────────────────────────────
+
+    document.getElementById('btn-login').addEventListener('click', async () => {
+      clearError();
+      const username = document.getElementById('auth-username').value.trim();
+      const password = document.getElementById('auth-password').value;
+
+      if (!username || !password) {
+        setError('Enter a username and password to proceed.');
+        return;
+      }
+
+      let res;
+      try {
+        res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+      } catch {
+        setError('Cannot reach the server. Check your connection.');
+        return;
+      }
+
+      const data = await res.json();
+      if (res.ok) {
+        setToken(data.token);
+        localStorage.setItem('toi_username', data.username);
+        await checkSave();
+      } else {
+        setError(data.error || 'The dungeon rejects you.');
+      }
+    });
+
+    // ── Auth: Register ────────────────────────────────────────────────
+
+    document.getElementById('btn-register').addEventListener('click', async () => {
+      clearError();
+      const username = document.getElementById('auth-username').value.trim();
+      const password = document.getElementById('auth-password').value;
+
+      if (!username || !password) {
+        setError('Choose a name and password to enter.');
+        return;
+      }
+
+      let res;
+      try {
+        res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+      } catch {
+        setError('Cannot reach the server. Check your connection.');
+        return;
+      }
+
+      const data = await res.json();
+      if (res.ok) {
+        setToken(data.token);
+        localStorage.setItem('toi_username', data.username);
+        await checkSave();
+      } else {
+        setError(data.error || 'Registration failed.');
+      }
+    });
+
+    // Allow Enter key to trigger login
+    document.getElementById('auth-password').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('btn-login').click();
+    });
+    document.getElementById('auth-username').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('auth-password').focus();
+    });
+
+    // ── Resume: buttons ───────────────────────────────────────────────
+
+    document.getElementById('btn-resume').addEventListener('click', () => {
+      // Phase 2: start actual game loop
+      alert('The game is being forged. Return soon.');
+    });
+
+    document.getElementById('btn-start-fresh').addEventListener('click', async () => {
+      if (!confirm('Abandon your current descent? This cannot be undone.')) return;
+      const res = await apiFetch('/api/save', { method: 'DELETE' });
+      if (res && res.ok) {
+        showPlaceholder();
+      }
+    });
+
+    // ── Placeholder: sign out ─────────────────────────────────────────
+
+    document.getElementById('btn-signout').addEventListener('click', () => {
+      clearToken();
+      localStorage.removeItem('toi_username');
+      showScreen('login');
+    });
+
+    // ── Bootstrap ─────────────────────────────────────────────────────
+
+    if (getToken()) {
+      checkSave();
+    } else {
+      showScreen('login');
+    }
+  </script>
+</body>
+</html>

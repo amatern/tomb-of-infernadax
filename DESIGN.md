@@ -852,7 +852,7 @@ tomb-of-infernadax/
 
 - **Platform:** Railway.app — deploy via GitHub repo, auto-deploy on push to main
 - **Port:** Always use `process.env.PORT || 3000` — never hardcode. Railway assigns dynamically.
-- **URL:** `tomb-of-infernadax.up.railway.app`
+- **URL:** `tomb-of-infernadax-production.up.railway.app`
 - **Linked from:** `https://fiveseals.com/games.html`
 - **Server:** Node.js + Express. Serves `public/` as static files. All API routes
   prefixed `/api/`. SQLite via `better-sqlite3` for users, saves, scores.
