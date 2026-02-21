@@ -3,20 +3,26 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-console.log('Starting: loading modules...');
-let express, bcrypt, jwt, path, db;
-try { express = require('express'); console.log('OK: express'); } catch(e) { console.error('FAIL: express', e.message); process.exit(1); }
-try { bcrypt = require('bcryptjs'); console.log('OK: bcryptjs'); } catch(e) { console.error('FAIL: bcryptjs', e.message); process.exit(1); }
-try { jwt = require('jsonwebtoken'); console.log('OK: jsonwebtoken'); } catch(e) { console.error('FAIL: jsonwebtoken', e.message); process.exit(1); }
-try { path = require('path'); console.log('OK: path'); } catch(e) { console.error('FAIL: path', e.message); process.exit(1); }
-try { db = require('./database'); console.log('OK: database'); } catch(e) { console.error('FAIL: database', e.message); process.exit(1); }
-console.log('All modules loaded. PORT=' + (process.env.PORT || 3000));
+process.on('unhandledRejection', (reason) => {
+  console.error('UNHANDLED REJECTION:', reason);
+  process.exit(1);
+});
+
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const path = require('path');
+const db = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const SALT_ROUNDS = 10;
 const TOKEN_EXPIRY = '30d';
+
+// ── Async error wrapper (Express 4 doesn't catch async throws) ────────────────
+
+const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 
@@ -35,18 +41,17 @@ function checkRateLimit(ip) {
 
   if (!entry || now - entry.windowStart > WINDOW_MS) {
     loginAttempts.set(ip, { count: 1, windowStart: now });
-    return false; // not rate-limited
+    return false;
   }
 
   if (entry.count >= MAX_ATTEMPTS) {
-    return true; // rate-limited
+    return true;
   }
 
   entry.count++;
   return false;
 }
 
-// Clean up stale entries every 5 minutes
 setInterval(() => {
   const cutoff = Date.now() - 60 * 1000;
   for (const [ip, entry] of loginAttempts) {
@@ -83,9 +88,13 @@ function requireAuth(req, res, next) {
   }
 }
 
+// ── Health check ──────────────────────────────────────────────────────────────
+
+app.get('/health', (req, res) => res.json({ ok: true }));
+
 // ── Auth routes ───────────────────────────────────────────────────────────────
 
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', wrap(async (req, res) => {
   const { username, password } = req.body || {};
 
   if (!validateUsername(username)) {
@@ -104,9 +113,9 @@ app.post('/api/register', async (req, res) => {
   const userId = db.createUser(username, hash);
   const token = jwt.sign({ userId, username }, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
   res.json({ token, username });
-});
+}));
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', wrap(async (req, res) => {
   const ip = req.ip;
   if (checkRateLimit(ip)) {
     return res.status(429).json({ error: 'Too many attempts. Wait a minute and try again.' });
@@ -133,7 +142,7 @@ app.post('/api/login', async (req, res) => {
     { expiresIn: TOKEN_EXPIRY }
   );
   res.json({ token, username: user.username });
-});
+}));
 
 // ── Save routes ───────────────────────────────────────────────────────────────
 
@@ -181,14 +190,14 @@ app.post('/api/scores', requireAuth, (req, res) => {
   res.json(db.getTopScores());
 });
 
-// ── Global error handler (catches malformed JSON bodies etc.) ─────────────────
+// ── Global error handler ──────────────────────────────────────────────────────
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
+  console.error('Route error:', err.message);
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({ error: 'Invalid JSON in request body.' });
   }
-  console.error(err);
   res.status(500).json({ error: 'Internal server error.' });
 });
 
