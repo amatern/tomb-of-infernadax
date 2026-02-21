@@ -173,10 +173,10 @@
 /* D-pad */
 .dpad {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: auto auto;
+  grid-template-columns: repeat(3, 54px);
+  grid-template-rows: repeat(3, 46px);
   gap: 3px;
-  padding: 0.4rem;
+  padding: 0.5rem;
   background: #0a0806;
   border-top: 1px solid var(--border-inner);
   flex-shrink: 0;
@@ -185,12 +185,12 @@
 }
 
 .dpad-btn {
-  min-width: 52px;
-  min-height: 44px;
+  width: 54px;
+  height: 46px;
   background: var(--btn-bg);
   border: 1px solid var(--border-inner);
   color: var(--text-dim);
-  font-size: 1rem;
+  font-size: 1.1rem;
   cursor: pointer;
   display: flex;
   align-items: center;

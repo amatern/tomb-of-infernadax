@@ -303,10 +303,13 @@ function confirmCharacter() {
 let _canvas = null;
 let _ctx    = null;
 
-// Depth scale factors for pseudo-3D corridors (depth 1 = nearest, 3 = farthest)
-const DEPTH_SCALE = [null, 0.70, 0.45, 0.25];
+// Perspective scale: fraction of half-width/half-height from centre per depth step.
+// Index 0 = screen edge (at player), 1–3 = 1–3 tiles ahead, 4 = vanishing point.
+const CORRIDOR_FRACS = [0.50, 0.32, 0.205, 0.125, 0.075];
 
-const WALL_COLORS = ['#5a4428', '#3d2f1e', '#2a2018']; // near → far
+const WALL_COLORS  = ['#614a2a', '#453420', '#2e2218']; // band 0 (nearest) → 2 (farthest)
+const FLOOR_COLORS = ['#201810', '#181208', '#0f0d06'];
+const CEIL_COLORS  = ['#181309', '#120f07', '#0a0806'];
 
 function initCanvas() {
   _canvas = document.getElementById('dungeon-canvas');
@@ -323,14 +326,11 @@ function resizeCanvas() {
   if (gameState) renderDungeon();
 }
 
-// Compute the pixel rect for a given depth slice
-function panelRect(depth, W, H) {
-  const s = DEPTH_SCALE[depth];
-  const hw = W * s / 2;
-  const hh = H * s / 2;
-  const cx = W / 2;
-  const cy = H / 2;
-  return { l: cx - hw, t: cy - hh, r: cx + hw, b: cy + hh };
+// Rectangle at a given depth (larger = nearer to player).
+function corridorRect(depth, W, H) {
+  const s = CORRIDOR_FRACS[Math.min(depth, CORRIDOR_FRACS.length - 1)];
+  const cx = W / 2, cy = H / 2;
+  return { l: cx - W * s, r: cx + W * s, t: cy - H * s, b: cy + H * s };
 }
 
 function renderDungeon() {
@@ -339,84 +339,141 @@ function renderDungeon() {
   const H = _canvas.height;
   const ctx = _ctx;
 
-  // Sky & floor gradient
+  // Sky & floor base gradient
   drawSkyFloor(ctx, W, H);
 
-  // Draw depth slices back to front
+  // Perspective corridor slices
   drawDepthSlices(ctx, W, H);
 
-  // Torch glow overlay
-  const grd = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W * 0.6);
-  grd.addColorStop(0,   'rgba(180, 100, 20, 0.12)');
-  grd.addColorStop(0.5, 'rgba(100, 50, 10, 0.06)');
-  grd.addColorStop(1,   'rgba(0,0,0,0.5)');
+  // Torch glow vignette
+  const grd = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W * 0.65);
+  grd.addColorStop(0,   'rgba(180, 100, 20, 0.10)');
+  grd.addColorStop(0.5, 'rgba(100, 50, 10, 0.05)');
+  grd.addColorStop(1,   'rgba(0,0,0,0.45)');
   ctx.fillStyle = grd;
   ctx.fillRect(0, 0, W, H);
 
-  // Special tile indicators
+  // Special tile indicators (stairs, chest, merchant)
   drawSpecialTileIndicators(ctx, W, H);
+
+  // Minimap overlay
+  drawMinimap(ctx, W, H);
 }
 
 function drawSkyFloor(ctx, W, H) {
   // Ceiling
-  const ceilGrd = ctx.createLinearGradient(0, 0, 0, H * 0.45);
-  ceilGrd.addColorStop(0, '#0a0704');
-  ceilGrd.addColorStop(1, '#1a1208');
+  const ceilGrd = ctx.createLinearGradient(0, 0, 0, H * 0.5);
+  ceilGrd.addColorStop(0, '#070503');
+  ceilGrd.addColorStop(1, '#141008');
   ctx.fillStyle = ceilGrd;
   ctx.fillRect(0, 0, W, H * 0.5);
 
   // Floor
   const floorGrd = ctx.createLinearGradient(0, H * 0.5, 0, H);
-  floorGrd.addColorStop(0, '#1a1208');
-  floorGrd.addColorStop(1, '#0a0704');
+  floorGrd.addColorStop(0, '#141008');
+  floorGrd.addColorStop(1, '#070503');
   ctx.fillStyle = floorGrd;
   ctx.fillRect(0, H * 0.5, W, H * 0.5);
 }
 
+// Draw perspective bands back-to-front.
+// Band b spans the space from (b tiles ahead) to (b+1 tiles ahead).
+// Floor and ceiling strips are always drawn — this creates the tunnel depth cue
+// even when the corridor continues open with no front wall.
 function drawDepthSlices(ctx, W, H) {
   if (!gameState) return;
   const { x, y, facing } = gameState.position;
   const map = FLOOR_MAPS[gameState.floor];
   if (!map) return;
 
-  const fwd   = DIRS[facing];
-  const left  = DIRS[turnLeft(facing)];
-  // right is fwd rotated right
+  const fwd  = DIRS[facing];
+  const left = DIRS[turnLeft(facing)];
 
-  // Draw far to near (depth 3 → 1)
-  for (let d = 3; d >= 1; d--) {
-    const wallColor = WALL_COLORS[d - 1];
-    const nr = panelRect(d, W, H);
+  // Fill vanishing point (the dark area seen at maximum depth)
+  const vp = corridorRect(3, W, H);
+  ctx.fillStyle = '#090806';
+  ctx.fillRect(vp.l, vp.t, vp.r - vp.l, vp.b - vp.t);
 
-    // Position ahead at this depth
-    const ax = x + fwd.dx * d;
-    const ay = y + fwd.dy * d;
+  for (let band = 2; band >= 0; band--) {
+    const outer = corridorRect(band,     W, H); // near face of this band
+    const inner = corridorRect(band + 1, W, H); // far face of this band
 
-    // Front wall at this depth
-    if (!isWalkable(map, ax, ay)) {
+    const wallColor  = WALL_COLORS[band];
+    const floorColor = FLOOR_COLORS[band];
+    const ceilColor  = CEIL_COLORS[band];
+
+    // Tile positions to check for this band
+    const fwdX = x + fwd.dx  * (band + 1);
+    const fwdY = y + fwd.dy  * (band + 1);
+    const lx   = x + fwd.dx  * band + left.dx;
+    const ly   = y + fwd.dy  * band + left.dy;
+    const rx   = x + fwd.dx  * band - left.dx;
+    const ry   = y + fwd.dy  * band - left.dy;
+
+    const hasFront = !isWalkable(map, fwdX, fwdY);
+    const hasLeft  = !isWalkable(map, lx, ly);
+    const hasRight = !isWalkable(map, rx, ry);
+
+    // ── Floor strip (always drawn) ───────────────────────────────────────────
+    ctx.fillStyle = floorColor;
+    ctx.beginPath();
+    ctx.moveTo(outer.l, outer.b);
+    ctx.lineTo(outer.r, outer.b);
+    ctx.lineTo(inner.r, inner.b);
+    ctx.lineTo(inner.l, inner.b);
+    ctx.closePath();
+    ctx.fill();
+
+    // ── Ceiling strip (always drawn) ─────────────────────────────────────────
+    ctx.fillStyle = ceilColor;
+    ctx.beginPath();
+    ctx.moveTo(outer.l, outer.t);
+    ctx.lineTo(outer.r, outer.t);
+    ctx.lineTo(inner.r, inner.t);
+    ctx.lineTo(inner.l, inner.t);
+    ctx.closePath();
+    ctx.fill();
+
+    // ── Left wall panel ──────────────────────────────────────────────────────
+    if (hasLeft) {
       ctx.fillStyle = wallColor;
-      ctx.fillRect(nr.l, nr.t, nr.r - nr.l, nr.b - nr.t);
-
-      // Cap the floor/ceiling between this rect and the outer screen
-      drawCorridorCaps(ctx, d, W, H, wallColor);
+      ctx.beginPath();
+      ctx.moveTo(outer.l, outer.t);
+      ctx.lineTo(inner.l, inner.t);
+      ctx.lineTo(inner.l, inner.b);
+      ctx.lineTo(outer.l, outer.b);
+      ctx.closePath();
+      ctx.fill();
+      drawEdgeLine(ctx, outer.l, outer.t, inner.l, inner.t);
+      drawEdgeLine(ctx, outer.l, outer.b, inner.l, inner.b);
     }
 
-    // Left side wall (wall to the left at depth d-1)
-    const lx = x + fwd.dx * (d - 1) + left.dx;
-    const ly = y + fwd.dy * (d - 1) + left.dy;
-    if (!isWalkable(map, lx, ly)) {
-      drawSidePanel(ctx, 'left', d, W, H, wallColor);
+    // ── Right wall panel ─────────────────────────────────────────────────────
+    if (hasRight) {
+      ctx.fillStyle = wallColor;
+      ctx.beginPath();
+      ctx.moveTo(outer.r, outer.t);
+      ctx.lineTo(inner.r, inner.t);
+      ctx.lineTo(inner.r, inner.b);
+      ctx.lineTo(outer.r, outer.b);
+      ctx.closePath();
+      ctx.fill();
+      drawEdgeLine(ctx, outer.r, outer.t, inner.r, inner.t);
+      drawEdgeLine(ctx, outer.r, outer.b, inner.r, inner.b);
     }
 
-    // Right side wall
-    const rx = x + fwd.dx * (d - 1) - left.dx;
-    const ry = y + fwd.dy * (d - 1) - left.dy;
-    if (!isWalkable(map, rx, ry)) {
-      drawSidePanel(ctx, 'right', d, W, H, wallColor);
+    // ── Front wall face ──────────────────────────────────────────────────────
+    if (hasFront) {
+      ctx.fillStyle = wallColor;
+      ctx.fillRect(inner.l, inner.t, inner.r - inner.l, inner.b - inner.t);
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(inner.l + 0.5, inner.t + 0.5,
+                     inner.r - inner.l - 1, inner.b - inner.t - 1);
     }
   }
 
-  // Current tile flooded tint
+  // Flooded tile tint (Floor 2 hazard)
   const curTile = tileAt(map, x, y);
   if (curTile === '~') {
     ctx.fillStyle = 'rgba(30, 80, 160, 0.18)';
@@ -424,43 +481,16 @@ function drawDepthSlices(ctx, W, H) {
   }
 }
 
-function drawCorridorCaps(ctx, depth, W, H, color) {
-  const inner = panelRect(depth, W, H);
-  const outer = depth < 3 ? panelRect(depth + 1, W, H) : { l: 0, t: 0, r: W, b: H };
-  ctx.fillStyle = color;
-
-  // Top cap
-  ctx.fillRect(inner.l, outer.t, inner.r - inner.l, inner.t - outer.t);
-  // Bottom cap
-  ctx.fillRect(inner.l, inner.b, inner.r - inner.l, outer.b - inner.b);
-}
-
-function drawSidePanel(ctx, side, depth, W, H, color) {
-  const near = panelRect(depth,     W, H);
-  const far  = panelRect(depth + 1 <= 3 ? depth + 1 : depth, W, H);
-
-  ctx.fillStyle = color;
-  ctx.beginPath();
-
-  if (side === 'left') {
-    ctx.moveTo(near.l, near.t);
-    ctx.lineTo(far.l,  far.t);
-    ctx.lineTo(far.l,  far.b);
-    ctx.lineTo(near.l, near.b);
-  } else {
-    ctx.moveTo(near.r, near.t);
-    ctx.lineTo(far.r,  far.t);
-    ctx.lineTo(far.r,  far.b);
-    ctx.lineTo(near.r, near.b);
-  }
-
-  ctx.closePath();
-  ctx.fill();
-
-  // Darker edge line
-  ctx.strokeStyle = '#0a0704';
+// Draw a single definition edge line between two points.
+function drawEdgeLine(ctx, x1, y1, x2, y2) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0,0,0,0.65)';
   ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
   ctx.stroke();
+  ctx.restore();
 }
 
 function drawSpecialTileIndicators(ctx, W, H) {
@@ -492,6 +522,68 @@ function drawSpecialTileIndicators(ctx, W, H) {
     const opened = gameState.chestsOpened.some(c => c.join(',') === key);
     if (!opened) drawIcon('⬡', ahead1 === 'C' ? 0.9 : 0.5, 0.05);
   }
+}
+
+// Small 2D minimap overlay in the top-right corner of the canvas.
+function drawMinimap(ctx, W, H) {
+  const map = FLOOR_MAPS[gameState.floor];
+  if (!map) return;
+
+  const CELL   = 7;
+  const COLS   = map[0].length;
+  const ROWS   = map.length;
+  const mmW    = COLS * CELL;
+  const mmH    = ROWS * CELL;
+  const mmX    = W - mmW - 8;  // top-right corner
+  const mmY    = 8;
+
+  // Background panel
+  ctx.fillStyle = 'rgba(6, 5, 3, 0.82)';
+  ctx.fillRect(mmX - 2, mmY - 2, mmW + 4, mmH + 4);
+  ctx.strokeStyle = '#2a1e12';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(mmX - 1.5, mmY - 1.5, mmW + 3, mmH + 3);
+
+  // Cells
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      const tile = map[row][col];
+      const px = mmX + col * CELL;
+      const py = mmY + row * CELL;
+
+      if (tile === 0) {
+        ctx.fillStyle = '#0e0b07';
+      } else {
+        ctx.fillStyle = '#2a1e12';
+      }
+      ctx.fillRect(px, py, CELL, CELL);
+
+      // Stair markers
+      if (tile === 3 || tile === 4) {
+        ctx.fillStyle = '#c07830';
+        ctx.fillRect(px + 1, py + 1, CELL - 2, CELL - 2);
+      }
+    }
+  }
+
+  // Player dot
+  const { x, y, facing } = gameState.position;
+  const px = mmX + x * CELL + Math.floor(CELL / 2);
+  const py = mmY + y * CELL + Math.floor(CELL / 2);
+
+  ctx.fillStyle = '#e8a040';
+  ctx.beginPath();
+  ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Facing arrow
+  const fwd = DIRS[facing];
+  ctx.strokeStyle = '#e8a040';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.lineTo(px + fwd.dx * 4, py + fwd.dy * 4);
+  ctx.stroke();
 }
 
 // ── Section 6 — Movement & Navigation ────────────────────────────────────────
@@ -540,12 +632,14 @@ function doTurnLeft() {
   if (!gameState) return;
   gameState.position.facing = turnLeft(gameState.position.facing);
   renderDungeon();
+  updateTopbar();
 }
 
 function doTurnRight() {
   if (!gameState) return;
   gameState.position.facing = turnRight(gameState.position.facing);
   renderDungeon();
+  updateTopbar();
 }
 
 function checkTileTrigger(x, y) {
@@ -739,7 +833,10 @@ function updateTopbar() {
   const daysEl  = document.getElementById('hud-days-label');
   const goldEl  = document.getElementById('hud-gold-label');
 
-  if (floorEl) floorEl.textContent = 'Floor ' + gameState.floor + ' / 5';
+  if (floorEl) {
+    const compass = { north: 'N', east: 'E', south: 'S', west: 'W' };
+    floorEl.textContent = 'Floor ' + gameState.floor + '/5  ' + (compass[gameState.position.facing] || '');
+  }
   if (daysEl) {
     const d = gameState.daysRemaining;
     daysEl.textContent = d + (d === 1 ? ' day' : ' days');
