@@ -2,7 +2,6 @@ const Database = require('better-sqlite3');
 const path = require('path');
 
 const DB_PATH = process.env.DB_PATH || path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH || '/tmp', 'game.db');
-console.log('DB path:', DB_PATH);
 const db = new Database(DB_PATH);
 
 // WAL mode for better concurrent read performance
