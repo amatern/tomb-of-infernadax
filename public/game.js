@@ -83,6 +83,32 @@ const SPELLS = [
   { name: 'Shadow Bolt', cost: 5,  cls: 'Necromancer',  effect: 'blind',  dice: [1,8], desc: '1d8 + blinds enemy' }
 ];
 
+const BOSSES = {
+  1: { name: "Krek'tak",   hp: 35, maxHp: 35, def: 12, dmg: 8,  id: 'krektak',   type: 'dragon', special: 'none',
+       intro: "Krek'tak, Stone Sentinel, erupts from the rubble with a bone-rattling roar!" },
+  2: { name: 'Thessalmar', hp: 45, maxHp: 45, def: 14, dmg: 12, id: 'thessalmar', type: 'dragon', special: 'lightning',
+       intro: 'Thessalmar, the Blue Wyrmling, rises in a crackle of static. Lightning arcs between his horns!' },
+  3: { name: 'Silvaclaw',  hp: 50, maxHp: 50, def: 14, dmg: 11, id: 'silvaclaw',  type: 'dragon', special: 'cold',
+       intro: 'Silvaclaw descends in a burst of freezing wind. Your breath fogs instantly.' },
+  4: { name: 'Vexmire',    hp: 55, maxHp: 55, def: 15, dmg: 13, id: 'vexmire',    type: 'dragon', special: 'poison',
+       intro: 'Vexmire, Plague Drake, hisses and spreads its wings — venom drips from every scale.' },
+  5: { name: 'Nyx',        hp: 60, maxHp: 60, def: 16, dmg: 14, id: 'nyx',        type: 'undead', special: 'acid',
+       intro: 'Nyx materializes from shadow, scales glistening with corrosive acid. The air burns.' }
+};
+
+const XARRATH_DATA = {
+  2: {
+    hp: 30, maxHp: 30, def: 13, dmg: 7,
+    intro: 'A figure materializes from shadow. Orange-gold blood still marks where you wounded him last time. "The Great One is watching. Prove yourselves again."',
+    outro: '"Worthy..." Xarrath retreats into the darkness with a nod. "For now."'
+  },
+  4: {
+    hp: 30, maxHp: 30, def: 15, dmg: 9,
+    intro: '"You are almost there," Xarrath says, wounds barely healed. "He is waiting for you. So am I."',
+    outro: 'Xarrath fades back into darkness. "Go. Face what waits below."'
+  }
+};
+
 const FLOOR_MAPS = {
   1: [
     [0,0,0,0,0,0,0,0,0,0],
@@ -107,6 +133,42 @@ const FLOOR_MAPS = {
     [0,'C',1,1,0,1,1,1,'B',0],
     [0,1,0,0,0,1,0,0,'C',0],
     [0,0,0,0,1,3,1,1,1,0]
+  ],
+  3: [
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,4,1,1,0,1,1,1,1,0],
+    [0,1,0,1,0,1,0,0,1,0],
+    [0,1,0,'W',1,1,1,0,1,0],
+    [0,'M',0,0,0,0,0,1,0,0],
+    [0,1,1,1,1,1,1,1,'B',0],
+    [0,0,1,0,0,1,0,0,1,0],
+    [0,'C',1,1,0,1,1,1,'C',0],
+    [0,1,0,1,0,1,0,'R',1,0],
+    [0,0,3,0,0,0,0,0,0,0]
+  ],
+  4: [
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,4,1,0,1,0,1,1,1,0],
+    [0,1,0,1,0,1,0,0,1,0],
+    [0,1,1,1,1,1,0,'C',1,0],
+    [0,1,0,0,0,0,0,1,0,0],
+    [0,'X',1,1,1,1,1,1,'B',0],
+    [0,0,1,0,'L',0,0,1,1,0],
+    [0,'C',1,1,0,'L',1,1,1,0],
+    [0,1,0,1,0,1,0,1,0,0],
+    [0,0,0,1,1,1,1,1,3,0]
+  ],
+  5: [
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,4,1,0,1,1,1,1,1,0],
+    [0,1,0,1,0,0,0,0,1,0],
+    [0,1,0,1,0,'H',1,1,1,0],
+    [0,1,1,1,0,1,0,0,1,0],
+    [0,1,0,0,0,1,1,1,1,0],
+    [0,1,0,'C',1,0,'C',0,1,0],
+    [0,1,1,1,1,0,1,1,1,0],
+    [0,1,0,0,1,0,1,0,'B',0],
+    [0,0,'I',1,1,1,1,1,1,0]
   ]
 };
 
@@ -117,9 +179,24 @@ const FLOOR_ENEMIES = {
     { name: 'Cave Bat Swarm',   hp: 12, maxHp: 12, def: 7,  dmg: 4, type: 'beast'    }
   ],
   2: [
-    { name: 'Sahuagin Warrior',          hp: 14, maxHp: 14, def: 10, dmg: 6, type: 'humanoid' },
+    { name: 'Sahuagin Warrior',          hp: 14, maxHp: 14, def: 10, dmg: 6, type: 'humanoid'  },
     { name: 'Corrupted Water Elemental', hp: 18, maxHp: 18, def: 11, dmg: 7, type: 'elemental' },
     { name: 'Cult Fanatic',              hp: 16, maxHp: 16, def: 10, dmg: 6, type: 'humanoid'  }
+  ],
+  3: [
+    { name: 'Storm Harpy',    hp: 16, maxHp: 16, def: 11, dmg: 7, type: 'beast'     },
+    { name: 'Wind Elemental', hp: 20, maxHp: 20, def: 12, dmg: 8, type: 'elemental' },
+    { name: 'Giant Eagle',    hp: 22, maxHp: 22, def: 11, dmg: 9, type: 'beast'     }
+  ],
+  4: [
+    { name: 'Blinded Cultist',    hp: 18, maxHp: 18, def: 10, dmg: 8,  type: 'humanoid'  },
+    { name: 'Radiant Golem',      hp: 28, maxHp: 28, def: 15, dmg: 10, type: 'construct'  },
+    { name: 'Dragon Cult Priest', hp: 20, maxHp: 20, def: 12, dmg: 9,  type: 'humanoid'  }
+  ],
+  5: [
+    { name: 'Wraith',               hp: 22, maxHp: 22, def: 13, dmg: 10, type: 'undead' },
+    { name: 'Shadow Drake',         hp: 30, maxHp: 30, def: 14, dmg: 11, type: 'dragon' },
+    { name: 'Undead Crimson Guard', hp: 25, maxHp: 25, def: 13, dmg: 10, type: 'undead' }
   ]
 };
 
@@ -131,6 +208,14 @@ const STORY_CARDS = {
   '2to3': {
     label: 'Floor 2 → 3',
     text: `For a moment, Fiona isn't Fiona. She's standing in a chamber she's never seen, speaking words she doesn't know, pouring her life into a seal made of light. Then it's gone. She's in the dungeon again. Her hands are shaking.`
+  },
+  '3to4': {
+    label: 'Floor 3 → 4',
+    text: `The ruby pulses in Sprinkles' pack. Dave can feel it — a fragment of himself, close but just out of reach. He wonders how many pieces of his soul are scattered through these walls. He hopes they're still him.`
+  },
+  '4to5': {
+    label: 'Floor 4 → 5',
+    text: `Arlo reads the stars through a crack in the ceiling — barely a sliver of sky, but enough. <em>Five shall fall, two shall remain.</em> He counts the party. Seven. Two will not see daylight. He doesn't tell anyone what he sees. He's not sure he believes it. He's not sure he doesn't.`
   }
 };
 
@@ -661,6 +746,18 @@ function checkTileTrigger(x, y) {
   if (tile === 'M') {
     logMsg('A hooded figure beckons from the alcove. (Merchant — coming soon)');
   }
+  if (tile === 'B') {
+    const bossDef = BOSSES[gameState.floor];
+    if (bossDef && !gameState.bossesDefeated.includes(bossDef.id)) {
+      startBossFight(gameState.floor);
+    }
+  }
+  if (tile === 'X') {
+    const flagKey = gameState.floor === 2 ? 'xarrathMet' : 'xarrathMet2';
+    if (!gameState.flags[flagKey]) {
+      startXarrathFight(gameState.floor);
+    }
+  }
   if (tile === 'C') {
     const key = [gameState.floor, x, y];
     const keyStr = key.join(',');
@@ -704,6 +801,12 @@ function maybeEncounter() {
 
 function descend() {
   if (!gameState) return;
+  // Stairs are sealed until the floor guardian is defeated
+  const bossDef = BOSSES[gameState.floor];
+  if (bossDef && !gameState.bossesDefeated.includes(bossDef.id)) {
+    logMsg('The way down is sealed. Defeat the floor guardian first.');
+    return;
+  }
   const nextFloor = gameState.floor + 1;
   if (!FLOOR_MAPS[nextFloor]) {
     logMsg('The passage is sealed. There is nothing beyond... yet.');
@@ -1346,6 +1449,12 @@ function resolveEnemyActions(freeAttack) {
       return;
     }
 
+    // Boss special attack on even rounds (replaces regular attack)
+    if (combatState.isBoss && enemy.special && enemy.special !== 'none' && combatState.round % 2 === 0) {
+      resolveBossSpecial(enemy);
+      return;
+    }
+
     // Attack front row (indices 0-2), 50% damage to back row (3-6)
     const frontRow = gameState.party.slice(0, 3).filter(m => m.hp > 0);
     const backRow  = gameState.party.slice(3).filter(m => m.hp > 0);
@@ -1386,34 +1495,47 @@ function tickStatusEffects() {
 }
 
 function checkCombatEnd() {
+  // Xarrath scripted retreat — after 2 rounds (or if he's downed)
+  if (combatState.isXarrath) {
+    const xDown = combatState.enemies.every(e => e.hp <= 0);
+    if (xDown || combatState.round >= 2) {
+      xarrathRetreat();
+      return true;
+    }
+  }
+
   // Victory
   const allEnemiesDead = combatState.enemies.every(e => e.hp <= 0);
   if (allEnemiesDead) {
-    // Loot drops
-    const goldDrop = roll(6) * 5;
-    gameState.inventory.gold += goldDrop;
-    appendCombatLog(`Victory! +${goldDrop} gold.`);
+    if (combatState.isBoss) {
+      endBossFight(combatState.bossFloor);
+    } else {
+      // Regular enemy loot drops
+      const goldDrop = roll(6) * 5;
+      gameState.inventory.gold += goldDrop;
+      appendCombatLog(`Victory! +${goldDrop} gold.`);
 
-    // 25% item drop
-    if (Math.random() < 0.25) {
-      const dropTable = [
-        'Healing Potion','Healing Potion',
-        'Mana Crystal',
-        'Antidote',
-        'Gold'
-      ];
-      const drop = dropTable[Math.floor(Math.random() * dropTable.length)];
-      if (drop === 'Gold') {
-        const bonus = roll(6) * 5;
-        gameState.inventory.gold += bonus;
-        appendCombatLog(`Found ${bonus} gold!`);
-      } else {
-        gameState.inventory.items.push(drop);
-        appendCombatLog(`Found a ${drop}!`);
+      // 25% item drop
+      if (Math.random() < 0.25) {
+        const dropTable = [
+          'Healing Potion','Healing Potion',
+          'Mana Crystal',
+          'Antidote',
+          'Gold'
+        ];
+        const drop = dropTable[Math.floor(Math.random() * dropTable.length)];
+        if (drop === 'Gold') {
+          const bonus = roll(6) * 5;
+          gameState.inventory.gold += bonus;
+          appendCombatLog(`Found ${bonus} gold!`);
+        } else {
+          gameState.inventory.items.push(drop);
+          appendCombatLog(`Found a ${drop}!`);
+        }
       }
-    }
 
-    endCombat(true, false);
+      endCombat(true, false);
+    }
     return true;
   }
 
@@ -1481,7 +1603,150 @@ function appendCombatLog(line) {
   while (log.children.length > 20) log.removeChild(log.lastChild);
 }
 
-// ── Section 10 — Story Cards & Floor Transitions ──────────────────────────────
+// ── Section 10 — Mini-Boss & Xarrath Encounters ───────────────────────────────
+
+function startBossFight(floor) {
+  const bossDef = BOSSES[floor];
+  if (!bossDef) return;
+  const boss = JSON.parse(JSON.stringify(bossDef));
+  _inCombat = true;
+  combatState = {
+    enemies:   [boss],
+    round:     1,
+    commands:  new Array(7).fill(null),
+    phase:     'command',
+    log:       [],
+    isBoss:    true,
+    bossFloor: floor
+  };
+  showScreen('combat');
+  renderCombatScreen();
+  appendCombatLog(`⚔ FLOOR ${floor} GUARDIAN`);
+  appendCombatLog(bossDef.intro);
+}
+
+function startXarrathFight(floor) {
+  const xDef = XARRATH_DATA[floor];
+  if (!xDef) return;
+  const xarrath = {
+    name: 'Xarrath the Hunter',
+    hp: xDef.hp, maxHp: xDef.hp,
+    def: xDef.def, dmg: xDef.dmg,
+    type: 'humanoid'
+  };
+  _inCombat = true;
+  combatState = {
+    enemies:      [xarrath],
+    round:        1,
+    commands:     new Array(7).fill(null),
+    phase:        'command',
+    log:          [],
+    isXarrath:    true,
+    xarrathFloor: floor
+  };
+  showScreen('combat');
+  renderCombatScreen();
+  appendCombatLog(`⚔ SCRIPTED ENCOUNTER — FLOOR ${floor}`);
+  appendCombatLog(xDef.intro);
+}
+
+function xarrathRetreat() {
+  const floor  = combatState.xarrathFloor;
+  const xDef   = XARRATH_DATA[floor];
+  const flagKey = floor === 2 ? 'xarrathMet' : 'xarrathMet2';
+  gameState.flags[flagKey] = true;
+  appendCombatLog(xDef.outro);
+  gameState.party.forEach(m => { delete m._defending; delete m._defBonus; });
+  _inCombat = false;
+  combatState = null;
+  autoSave();
+  setTimeout(() => {
+    showScreen('dungeon');
+    renderDungeon();
+    renderPartyHUD();
+    logMsg('Xarrath vanishes into shadow. The corridor is clear.');
+  }, 1200);
+}
+
+function endBossFight(floor) {
+  const bossDef = BOSSES[floor];
+  if (!gameState.bossesDefeated.includes(bossDef.id)) {
+    gameState.bossesDefeated.push(bossDef.id);
+  }
+
+  // Gold: 3d6 × 10
+  const goldDrop = rollN(3, 6) * 10;
+  gameState.inventory.gold += goldDrop;
+  appendCombatLog(`${bossDef.name} falls! +${goldDrop} gold!`);
+
+  // Guaranteed item from loot table
+  const lootTable = ['Hi-Potion', 'Mana Crystal', 'Antidote', 'Elixir'];
+  const item = lootTable[Math.floor(Math.random() * lootTable.length)];
+  gameState.inventory.items.push(item);
+  appendCombatLog(`Spoils of battle: ${item}!`);
+
+  // Seal gemstone
+  const SEAL_BY_FLOOR = { 1: 'ruby', 2: 'sapphire', 3: 'topaz', 4: 'diamond', 5: 'emerald' };
+  const seal = SEAL_BY_FLOOR[floor];
+  if (seal && !gameState.seals.includes(seal)) {
+    gameState.seals.push(seal);
+    appendCombatLog(`★ Seal Gemstone recovered: ${seal.toUpperCase()}!`);
+  }
+
+  gameState.party.forEach(m => { delete m._defending; delete m._defBonus; });
+  _inCombat = false;
+  combatState = null;
+  autoSave();
+  setTimeout(() => {
+    showScreen('dungeon');
+    renderDungeon();
+    renderPartyHUD();
+    logMsg(`${bossDef.name} is vanquished. The path ahead is open.`);
+  }, 1200);
+}
+
+function resolveBossSpecial(enemy) {
+  const frontRow = gameState.party.slice(0, 3).filter(m => m.hp > 0);
+  const alive    = gameState.party.filter(m => m.hp > 0);
+  switch (enemy.special) {
+    case 'lightning': {
+      // Hits up to 3 targets for 4 DMG each (front row priority, then back)
+      const targets = alive.slice(0, 3);
+      targets.forEach(t => {
+        let dmg = 4;
+        if (t._defending) dmg = Math.ceil(dmg / 2);
+        t.hp = Math.max(0, t.hp - dmg);
+      });
+      appendCombatLog(`${enemy.name} unleashes Lightning Breath — ${targets.map(t => t.name).join(', ')} each take 4 damage!`);
+      break;
+    }
+    case 'cold': {
+      alive.forEach(m => {
+        if (!m.statusEffects.includes('slowed')) m.statusEffects.push('slowed');
+      });
+      appendCombatLog(`${enemy.name} exhales Cold Breath — entire party is Slowed!`);
+      break;
+    }
+    case 'poison': {
+      frontRow.forEach(m => {
+        if (!m.statusEffects.includes('poison')) m.statusEffects.push('poison');
+      });
+      appendCombatLog(`${enemy.name} sprays Poison Breath — front row is poisoned!`);
+      break;
+    }
+    case 'acid': {
+      frontRow.forEach(m => {
+        if (!m.statusEffects.includes('corroded')) m.statusEffects.push('corroded');
+      });
+      appendCombatLog(`${enemy.name} breathes Acid — front row is corroded (permanent -2 DEF)!`);
+      break;
+    }
+    default:
+      appendCombatLog(`${enemy.name} uses its special ability!`);
+  }
+}
+
+// ── Section 11 — Story Cards & Floor Transitions ──────────────────────────────
 
 let _pendingStoryCallback = null;
 
@@ -1516,7 +1781,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ── Section 11 — Auto-Save ────────────────────────────────────────────────────
+// ── Section 12 — Auto-Save ────────────────────────────────────────────────────
 
 let _saveTimer = null;
 
