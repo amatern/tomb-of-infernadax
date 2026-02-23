@@ -16,7 +16,7 @@ Dark fantasy party-based browser dungeon crawler inspired by Wizardry. Plain HTM
 - [x] Phase 2 — Core Game Loop (complete: char select, dungeon, HUD, combat, story cards)
 - [ ] Phase 3 — Content & Systems
   - [x] Step 12 — Mini-bosses + Xarrath scripted encounters (floors 2 & 4)
-  - [ ] Step 13 — Items, shared inventory, merchant NPC (floors 1, 3, 5)
+  - [x] Step 13 — Items, shared inventory, merchant NPC (floors 1, 3, 5)
   - [ ] Step 14 — Spells + MP system (Dave, Arlo, Unpickled)
   - [ ] Step 15 — Special abilities for all 7 characters
   - [ ] Step 16 — Seal gemstone passive bonuses + Dave's Soul Fragment
@@ -101,11 +101,11 @@ scores (id, user_id, username, character, floors_reached, days_remaining, good_e
 
 ## Phase 3 Starting Point (next session)
 
-Next up: **Step 13** — Items, shared inventory, merchant NPC (floors 1, 3, 5)
+Next up: **Step 14** — Spells + MP system for Dave, Arlo, Unpickled
 
-- Merchant on B tile → open shop screen with floor-specific inventory
-- Items: Healing Potion (30g), Hi-Potion (60g), Mana Crystal (40g), Mana Crystal large (75g),
-  Antidote (25g), Dragonscale Mail (120g), Torch Bundle (20g), Elixir (150g)
-- Floor 5 merchant adds Seal Breaker (200g)
-- Chest loot tables per DESIGN.md (currently gives generic loot — fix in Step 17)
-- `openChest(x,y)` is already wired; just needs proper per-floor loot tables
+- Spells already defined in SPELLS constant; basic resolution exists in resolvePartyActions
+- Need: spell target selection (damage vs heal vs stun vs blind vs dragon)
+- Need: Turn Undead stun working properly against undead enemies
+- Need: Holy Light dealing 2d8 to dragon-type + healing self 4 HP
+- Need: Shadow Bolt applying blind status correctly (currently partially done)
+- Casters: Dave (Cleric), Arlo (Cleric), Unpickled (Necromancer)
