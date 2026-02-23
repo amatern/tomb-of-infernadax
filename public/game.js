@@ -109,6 +109,24 @@ const XARRATH_DATA = {
   }
 };
 
+const ITEMS = {
+  'Healing Potion':       { cost: 30,  effect: 'heal',      desc: '2d4+2 HP to lowest-HP party member' },
+  'Hi-Potion':            { cost: 60,  effect: 'heal-big',  desc: '4d4+4 HP to lowest-HP party member' },
+  'Mana Crystal':         { cost: 40,  effect: 'mp',        desc: '+8 MP to lowest-MP caster' },
+  'Mana Crystal (large)': { cost: 75,  effect: 'mp-big',    desc: '+15 MP to lowest-MP caster' },
+  'Antidote':             { cost: 25,  effect: 'antidote',  desc: 'Cure poison on one party member' },
+  'Dragonscale Mail':     { cost: 120, effect: 'armor',     desc: '+2 DEF for entire party (passive, permanent)' },
+  'Torch Bundle':         { cost: 20,  effect: 'torch',     desc: 'Restores full view distance on Floor 5' },
+  'Elixir':               { cost: 150, effect: 'revive',    desc: 'Revive KO\'d party member at 50% HP' },
+  'Seal Breaker':         { cost: 200, effect: 'sealbreak', desc: 'Nullify one enemy\'s special ability this fight' }
+};
+
+const MERCHANT_STOCK = {
+  1: ['Healing Potion', 'Mana Crystal', 'Antidote', 'Torch Bundle'],
+  3: ['Healing Potion', 'Hi-Potion', 'Mana Crystal', 'Mana Crystal (large)', 'Antidote', 'Dragonscale Mail', 'Torch Bundle', 'Elixir'],
+  5: ['Healing Potion', 'Hi-Potion', 'Mana Crystal', 'Mana Crystal (large)', 'Antidote', 'Dragonscale Mail', 'Torch Bundle', 'Elixir', 'Seal Breaker']
+};
+
 const FLOOR_MAPS = {
   1: [
     [0,0,0,0,0,0,0,0,0,0],
@@ -258,7 +276,8 @@ function initNewGame(username) {
       phylacteryDestroyed: false,
       phylacteryRevealed:  false,
       torchActive:         false,
-      trapF1Fired:         false
+      trapF1Fired:         false,
+      dragonscaleMail:     false
     },
     daysRemaining: 7
   };
@@ -744,7 +763,7 @@ function checkTileTrigger(x, y) {
     logMsg('Stairs lead back up toward the entrance.');
   }
   if (tile === 'M') {
-    logMsg('A hooded figure beckons from the alcove. (Merchant — coming soon)');
+    openMerchant();
   }
   if (tile === 'B') {
     const bossDef = BOSSES[gameState.floor];
@@ -1220,11 +1239,21 @@ function openCommandSheet(charIndex) {
     });
   });
 
-  // Item
-  const healPotions = gameState.inventory.items.filter(it => it === 'Healing Potion').length;
-  if (healPotions > 0) {
-    actions.push({ action: 'item', label: 'Item: Healing Potion', desc: '2d4+2 HP to one party member. (Target self)' });
-  }
+  // Items — one entry per distinct item in inventory
+  const itemCounts = {};
+  gameState.inventory.items.forEach(it => { itemCounts[it] = (itemCounts[it] || 0) + 1; });
+  Object.entries(itemCounts).forEach(([name, count]) => {
+    const def = ITEMS[name];
+    if (!def) return;
+    let disabled = false;
+    if (name === 'Seal Breaker' && !(combatState && combatState.isBoss)) disabled = true;
+    if (name === 'Antidote' && !gameState.party.some(p => p.statusEffects.includes('poison'))) disabled = true;
+    if (name === 'Elixir'   && !gameState.party.some(p => p.hp <= 0)) disabled = true;
+    actions.push({
+      action: 'item', label: `${name} ×${count}`,
+      desc: def.desc, itemName: name, disabled
+    });
+  });
 
   // Special
   const abilityUsed = m.abilitiesUsed.includes('special');
@@ -1266,7 +1295,8 @@ function setCommand(charIndex, actionObj) {
   combatState.commands[charIndex] = {
     action:    actionObj.action,
     label:     actionObj.label,
-    spellName: actionObj.spellName || null
+    spellName: actionObj.spellName || null,
+    itemName:  actionObj.itemName  || null
   };
   renderCommandList();
   updateResolveButton();
@@ -1402,12 +1432,71 @@ function resolvePartyActions() {
         break;
       }
       case 'item': {
-        const idx = gameState.inventory.items.indexOf('Healing Potion');
-        if (idx === -1) break;
-        gameState.inventory.items.splice(idx, 1);
-        const healed = rollN(2, 4) + 2;
-        m.hp = Math.min(m.maxHp, m.hp + healed);
-        appendCombatLog(`${m.name} uses Healing Potion — restores ${healed} HP.`);
+        const iname = cmd.itemName || 'Healing Potion';
+        const iidx  = gameState.inventory.items.indexOf(iname);
+        if (iidx === -1) { appendCombatLog(`${m.name} reaches for ${iname} — it's gone!`); break; }
+        gameState.inventory.items.splice(iidx, 1);
+        const idef = ITEMS[iname] || { effect: 'heal' };
+        switch (idef.effect) {
+          case 'heal': {
+            const t = gameState.party.filter(p => p.hp > 0).reduce((a, b) => b.hp < a.hp ? b : a, m);
+            const hp = rollN(2, 4) + 2;
+            t.hp = Math.min(t.maxHp, t.hp + hp);
+            appendCombatLog(`${m.name} uses ${iname} — ${t.name} recovers ${hp} HP.`);
+            break;
+          }
+          case 'heal-big': {
+            const t = gameState.party.filter(p => p.hp > 0).reduce((a, b) => b.hp < a.hp ? b : a, m);
+            const hp = rollN(4, 4) + 4;
+            t.hp = Math.min(t.maxHp, t.hp + hp);
+            appendCombatLog(`${m.name} uses ${iname} — ${t.name} recovers ${hp} HP.`);
+            break;
+          }
+          case 'mp': {
+            const casters = gameState.party.filter(p => p.maxMp > 0 && p.hp > 0);
+            if (casters.length) {
+              const t = casters.reduce((a, b) => b.mp < a.mp ? b : a);
+              t.mp = Math.min(t.maxMp, t.mp + 8);
+              appendCombatLog(`${m.name} uses ${iname} — ${t.name} recovers 8 MP.`);
+            }
+            break;
+          }
+          case 'mp-big': {
+            const casters = gameState.party.filter(p => p.maxMp > 0 && p.hp > 0);
+            if (casters.length) {
+              const t = casters.reduce((a, b) => b.mp < a.mp ? b : a);
+              t.mp = Math.min(t.maxMp, t.mp + 15);
+              appendCombatLog(`${m.name} uses ${iname} — ${t.name} recovers 15 MP.`);
+            }
+            break;
+          }
+          case 'antidote': {
+            const victim = gameState.party.find(p => p.statusEffects.includes('poison'));
+            if (victim) {
+              victim.statusEffects.splice(victim.statusEffects.indexOf('poison'), 1);
+              appendCombatLog(`${m.name} uses Antidote — ${victim.name} cured of poison!`);
+            }
+            break;
+          }
+          case 'revive': {
+            const fallen = gameState.party.find(p => p.hp <= 0);
+            if (fallen) {
+              fallen.hp = Math.max(1, Math.floor(fallen.maxHp * 0.5));
+              appendCombatLog(`${m.name} uses Elixir — ${fallen.name} revived at ${fallen.hp} HP!`);
+            }
+            break;
+          }
+          case 'sealbreak': {
+            const e = combatState.enemies.find(e => e.hp > 0 && e.special && e.special !== 'none');
+            if (e) {
+              e.special = 'none';
+              appendCombatLog(`${m.name} uses Seal Breaker — ${e.name}'s special is nullified!`);
+            }
+            break;
+          }
+          default:
+            appendCombatLog(`${m.name} uses ${iname}.`);
+        }
         break;
       }
       case 'special': {
@@ -1460,12 +1549,14 @@ function resolveEnemyActions(freeAttack) {
     const backRow  = gameState.party.slice(3).filter(m => m.hp > 0);
 
     // Pick a front target if available
+    const armorBonus = gameState.flags.dragonscaleMail ? 2 : 0;
+
     if (frontRow.length > 0) {
       const t = frontRow[Math.floor(Math.random() * frontRow.length)];
       const base = enemy.dmg;
       let dmg = freeAttack ? base : (Math.floor(Math.random() * base) + 1);
       if (t._defending) dmg = Math.ceil(dmg / 2);
-      dmg = Math.max(1, dmg);
+      dmg = Math.max(1, dmg - armorBonus - (t._defBonus || 0));
       t.hp = Math.max(0, t.hp - dmg);
       appendCombatLog(`${enemy.name} attacks ${t.name} — ${dmg} damage!`);
     } else if (backRow.length > 0) {
@@ -1473,7 +1564,7 @@ function resolveEnemyActions(freeAttack) {
       const t = backRow[Math.floor(Math.random() * backRow.length)];
       let dmg = Math.ceil((Math.floor(Math.random() * enemy.dmg) + 1) / 2);
       if (t._defending) dmg = Math.ceil(dmg / 2);
-      dmg = Math.max(1, dmg);
+      dmg = Math.max(1, dmg - armorBonus - (t._defBonus || 0));
       t.hp = Math.max(0, t.hp - dmg);
       appendCombatLog(`${enemy.name} strikes ${t.name} (back row) — ${dmg} damage!`);
     }
@@ -1781,7 +1872,90 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ── Section 12 — Auto-Save ────────────────────────────────────────────────────
+// ── Section 12 — Merchant ─────────────────────────────────────────────────────
+
+function openMerchant() {
+  const stock = MERCHANT_STOCK[gameState.floor];
+  if (!stock) {
+    logMsg('The alcove is empty.');
+    return;
+  }
+  renderMerchantSheet();
+  document.getElementById('merchant-overlay').classList.add('open');
+  document.getElementById('merchant-sheet').classList.add('open');
+}
+
+function closeMerchant() {
+  document.getElementById('merchant-overlay').classList.remove('open');
+  document.getElementById('merchant-sheet').classList.remove('open');
+}
+
+function renderMerchantSheet() {
+  const stock = MERCHANT_STOCK[gameState.floor];
+  const goldEl = document.getElementById('merchant-gold');
+  if (goldEl) goldEl.textContent = gameState.inventory.gold + ' gp';
+
+  const list = document.getElementById('merchant-items');
+  if (!list || !stock) return;
+  list.innerHTML = '';
+
+  stock.forEach(name => {
+    const def = ITEMS[name];
+    if (!def) return;
+
+    const canAfford = gameState.inventory.gold >= def.cost;
+    const alreadyHas =
+      (name === 'Dragonscale Mail' && gameState.flags.dragonscaleMail) ||
+      (name === 'Torch Bundle'     && gameState.flags.torchActive);
+
+    const btn = document.createElement('button');
+    btn.className = 'sheet-action-btn merchant-item-btn';
+    if (!canAfford || alreadyHas) btn.disabled = true;
+
+    btn.innerHTML = `
+      <span class="merchant-item-name">${name}</span>
+      <span class="merchant-item-price">${def.cost} gp</span>
+      <span class="sheet-action-desc">${def.desc}${alreadyHas ? ' — already owned' : ''}</span>
+    `;
+    btn.addEventListener('click', () => buyItem(name));
+    list.appendChild(btn);
+  });
+}
+
+function buyItem(name) {
+  const def = ITEMS[name];
+  if (!def || gameState.inventory.gold < def.cost) return;
+
+  gameState.inventory.gold -= def.cost;
+
+  switch (def.effect) {
+    case 'armor':
+      gameState.flags.dragonscaleMail = true;
+      logMsg('Dragonscale Mail equipped — party gains +2 DEF.');
+      break;
+    case 'torch':
+      gameState.flags.torchActive = true;
+      logMsg('Torch Bundle lit — view distance restored on Floor 5.');
+      break;
+    default:
+      gameState.inventory.items.push(name);
+      logMsg(`Purchased: ${name}.`);
+  }
+
+  renderMerchantSheet();
+  renderPartyHUD();
+  autoSave();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const closeBtn = document.getElementById('btn-merchant-close');
+  if (closeBtn) closeBtn.addEventListener('click', closeMerchant);
+
+  const overlay = document.getElementById('merchant-overlay');
+  if (overlay) overlay.addEventListener('click', closeMerchant);
+});
+
+// ── Section 13 — Auto-Save ────────────────────────────────────────────────────
 
 let _saveTimer = null;
 
