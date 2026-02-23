@@ -13,8 +13,14 @@ Dark fantasy party-based browser dungeon crawler inspired by Wizardry. Plain HTM
 ## Phase Progress
 
 - [x] Phase 1 — Scaffold & Infrastructure (complete, live)
-- [ ] Phase 2 — Core Game Loop
+- [x] Phase 2 — Core Game Loop (complete: char select, dungeon, HUD, combat, story cards)
 - [ ] Phase 3 — Content & Systems
+  - [x] Step 12 — Mini-bosses + Xarrath scripted encounters (floors 2 & 4)
+  - [ ] Step 13 — Items, shared inventory, merchant NPC (floors 1, 3, 5)
+  - [ ] Step 14 — Spells + MP system (Dave, Arlo, Unpickled)
+  - [ ] Step 15 — Special abilities for all 7 characters
+  - [ ] Step 16 — Seal gemstone passive bonuses + Dave's Soul Fragment
+  - [ ] Step 17 — Monster drops + treasure chests (chestsOpened tracking)
 - [ ] Phase 4 — Story & Endings
 - [ ] Phase 5 — Persistence & Launch
 
@@ -47,7 +53,9 @@ package.json     — dependencies + postinstall rebuild for better-sqlite3
 railway.toml     — startCommand, healthcheckPath /health, timeout 300
 .gitignore       — excludes game.db, node_modules
 public/
-  index.html     — all UI so far: login, resume, placeholder screens
+  index.html     — all screens: login, loading, resume, char-select, dungeon, combat, story
+  game.js        — all game logic (~1750 lines): constants, maps, combat, canvas, HUD, auto-save
+  style.css      — all CSS (~800 lines): mobile-first, 768px desktop breakpoint
 ```
 
 ## API
@@ -91,12 +99,13 @@ scores (id, user_id, username, character, floors_reached, days_remaining, good_e
 }
 ```
 
-## Phase 2 Starting Point (next session)
+## Phase 3 Starting Point (next session)
 
-Steps 6–11 per DESIGN.md build order:
-6. Character select screen — 7 cards, pick one, stored in gameState
-7. Dungeon grid + first-person canvas view + arrow-key + D-pad movement
-8. Party HUD — all 7 characters, HP/MP bars, days remaining, gold, seals
-9. Random encounter trigger + Wizardry command phase UI
-10. Combat resolution (simultaneous) + combat log
-11. Floor progression: stairs, floor transitions, story cards
+Next up: **Step 13** — Items, shared inventory, merchant NPC (floors 1, 3, 5)
+
+- Merchant on B tile → open shop screen with floor-specific inventory
+- Items: Healing Potion (30g), Hi-Potion (60g), Mana Crystal (40g), Mana Crystal large (75g),
+  Antidote (25g), Dragonscale Mail (120g), Torch Bundle (20g), Elixir (150g)
+- Floor 5 merchant adds Seal Breaker (200g)
+- Chest loot tables per DESIGN.md (currently gives generic loot — fix in Step 17)
+- `openChest(x,y)` is already wired; just needs proper per-floor loot tables
