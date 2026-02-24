@@ -212,7 +212,7 @@ const FLOOR_ENEMIES = {
     { name: 'Dragon Cult Priest', hp: 20, maxHp: 20, def: 12, dmg: 9,  type: 'humanoid'  }
   ],
   5: [
-    { name: 'Wraith',               hp: 22, maxHp: 22, def: 13, dmg: 10, type: 'undead' },
+    { name: 'Wraith',               hp: 22, maxHp: 22, def: 13, dmg: 10, type: 'undead', physImmune: true },
     { name: 'Shadow Drake',         hp: 30, maxHp: 30, def: 14, dmg: 11, type: 'dragon' },
     { name: 'Undead Crimson Guard', hp: 25, maxHp: 25, def: 13, dmg: 10, type: 'undead' }
   ]
@@ -277,7 +277,8 @@ function initNewGame(username) {
       phylacteryRevealed:  false,
       torchActive:         false,
       trapF1Fired:         false,
-      dragonscaleMail:     false
+      dragonscaleMail:     false,
+      soulFragmentFloor:   null
     },
     daysRemaining: 7
   };
@@ -1229,11 +1230,14 @@ function openCommandSheet(charIndex) {
 
   // Spell — if they have relevant class
   const mySpells = SPELLS.filter(s => s.cls === ch.cls);
+  const soulActive = gameState.flags.soulFragmentFloor === gameState.floor && gameState.flags.rubyKept !== false;
   mySpells.forEach(spell => {
-    const canCast = m.mp >= spell.cost;
+    const effectiveCost = soulActive ? 0 : spell.cost;
+    const canCast = m.mp >= effectiveCost;
+    const costLabel = soulActive ? `FREE (Soul Fragment)` : `${effectiveCost} MP`;
     actions.push({
       action: 'spell', label: `Spell: ${spell.name}`,
-      desc: `${spell.desc} (${spell.cost} MP)`,
+      desc: `${spell.desc} — ${costLabel} [${m.mp}/${m.maxMp} MP]`,
       spellName: spell.name,
       disabled: !canCast
     });
@@ -1386,6 +1390,11 @@ function resolvePartyActions() {
 
     switch (cmd.action) {
       case 'attack': {
+        // Physically immune enemies (e.g. Wraiths) cannot be harmed by normal attacks
+        if (target.physImmune) {
+          appendCombatLog(`${m.name} attacks ${target.name} — no effect! (immune to physical attacks)`);
+          break;
+        }
         const rawRoll = roll(20);
         const total   = rawRoll + m.str;
         const crit    = rawRoll === 20;
@@ -1402,32 +1411,80 @@ function resolvePartyActions() {
       case 'spell': {
         const spell = SPELLS.find(s => s.name === cmd.spellName);
         if (!spell) break;
-        if (m.mp < spell.cost) { appendCombatLog(`${m.name} has no MP for ${spell.name}!`); break; }
-        m.mp -= spell.cost;
+        const soulFree = gameState.flags.soulFragmentFloor === gameState.floor &&
+                         gameState.flags.rubyKept !== false;
+        const actualCost = soulFree ? 0 : spell.cost;
+        if (m.mp < actualCost) { appendCombatLog(`${m.name} has no MP for ${spell.name}!`); break; }
+        m.mp -= actualCost;
 
         if (spell.effect === 'heal') {
-          // Target self or lowest HP ally
-          const healtarget = gameState.party.reduce((a, b) =>
-            (b.hp > 0 && b.hp < a.hp ? b : a), m);
+          // Cure Wounds: target lowest-HP living ally
+          const alive = gameState.party.filter(p => p.hp > 0);
+          const healtarget = alive.reduce((a, b) => b.hp < a.hp ? b : a, m);
           const healed = rollN(spell.dice[0], spell.dice[1]) + (spell.bonus || 0);
           healtarget.hp = Math.min(healtarget.maxHp, healtarget.hp + healed);
           appendCombatLog(`${m.name} casts ${spell.name} — heals ${healtarget.name} for ${healed} HP.`);
-        } else if (spell.effect === 'pierce' || spell.effect === 'damage' || spell.effect === 'dragon') {
+
+        } else if (spell.effect === 'damage') {
+          // Flamebolt: standard damage roll, requires to-hit vs DEF
+          if (!target) break;
+          const rawRoll = roll(20);
+          const total   = rawRoll + m.int;
+          if (total >= target.def) {
+            const dmg = rollN(spell.dice[0], spell.dice[1]);
+            target.hp = Math.max(0, target.hp - dmg);
+            appendCombatLog(`${m.name} casts ${spell.name} — rolls ${rawRoll} — ${dmg} fire damage to ${target.name}!`);
+          } else {
+            appendCombatLog(`${m.name} casts ${spell.name} — rolls ${rawRoll} — fizzles against ${target.name}.`);
+          }
+
+        } else if (spell.effect === 'pierce') {
+          // Bone Spear: ignores DEF, no to-hit roll
           if (!target) break;
           const dmg = rollN(spell.dice[0], spell.dice[1]);
           target.hp = Math.max(0, target.hp - dmg);
-          appendCombatLog(`${m.name} casts ${spell.name} — ${dmg} damage to ${target.name}!`);
-          if (spell.effect === 'blind') target.status = 'blind';
+          appendCombatLog(`${m.name} casts ${spell.name} — ${dmg} piercing damage (ignores DEF)!`);
+
+        } else if (spell.effect === 'dragon') {
+          // Holy Light: 2d8 vs dragon-type, 1d8 vs others; always heals caster 4 HP
+          if (!target) break;
+          const isDragon = target.type === 'dragon';
+          const dmg = isDragon
+            ? rollN(spell.dice[0], spell.dice[1])
+            : rollN(1, spell.dice[1]);
+          target.hp = Math.max(0, target.hp - dmg);
+          m.hp = Math.min(m.maxHp, m.hp + (spell.healSelf || 4));
+          if (isDragon) {
+            appendCombatLog(`${m.name} casts ${spell.name} — ${dmg} radiant damage (EFFECTIVE vs dragon)! Healed 4 HP.`);
+          } else {
+            appendCombatLog(`${m.name} casts ${spell.name} — ${dmg} radiant damage. Healed 4 HP.`);
+          }
+
         } else if (spell.effect === 'blind') {
+          // Shadow Bolt: 1d8 damage + blinds for 2 rounds
           if (!target) break;
-          const dmg = rollN(spell.dice[0], spell.dice[1]);
-          target.hp = Math.max(0, target.hp - dmg);
-          target.status = 'blind';
-          appendCombatLog(`${m.name} casts ${spell.name} — ${dmg} damage, ${target.name} is blinded!`);
+          const rawRoll = roll(20);
+          const total   = rawRoll + m.int;
+          if (total >= target.def) {
+            const dmg = rollN(spell.dice[0], spell.dice[1]);
+            target.hp = Math.max(0, target.hp - dmg);
+            target.status = 'blind';
+            target.blindRounds = 2;
+            appendCombatLog(`${m.name} casts ${spell.name} — rolls ${rawRoll} — ${dmg} damage, ${target.name} is blinded (2 rounds)!`);
+          } else {
+            appendCombatLog(`${m.name} casts ${spell.name} — rolls ${rawRoll} — misses ${target.name}.`);
+          }
+
         } else if (spell.effect === 'stun') {
+          // Turn Undead: only effective vs undead type
           if (!target) break;
-          target.status = 'stunned';
-          appendCombatLog(`${m.name} casts ${spell.name} — ${target.name} is stunned!`);
+          if (target.type === 'undead') {
+            target.status = 'stunned';
+            target.stunRounds = 2;
+            appendCombatLog(`${m.name} invokes ${spell.name} — ${target.name} is turned! (2 rounds)`);
+          } else {
+            appendCombatLog(`${m.name} invokes ${spell.name} — ${target.name} is unaffected.`);
+          }
         }
         break;
       }
@@ -1535,6 +1592,10 @@ function resolveEnemyActions(freeAttack) {
     if (enemy.hp <= 0) return;
     if (enemy.status === 'stunned') {
       appendCombatLog(`${enemy.name} is stunned and cannot act.`);
+      return;
+    }
+    if (enemy.status === 'blind' && Math.random() < 0.5) {
+      appendCombatLog(`${enemy.name} is blinded and swings wide — miss!`);
       return;
     }
 
@@ -1677,9 +1738,16 @@ function resetCommandPhase() {
     delete m._defending;
     delete m._defBonus;
   });
-  // Decrement stun
+  // Decrement stun and blind durations
   combatState.enemies.forEach(e => {
-    if (e.status === 'stunned') e.status = null;
+    if (e.status === 'stunned') {
+      e.stunRounds = (e.stunRounds || 1) - 1;
+      if (e.stunRounds <= 0) { e.status = null; e.stunRounds = 0; }
+    }
+    if (e.status === 'blind') {
+      e.blindRounds = (e.blindRounds || 1) - 1;
+      if (e.blindRounds <= 0) { e.status = null; e.blindRounds = 0; }
+    }
   });
   renderCombatScreen();
 }
@@ -1782,6 +1850,12 @@ function endBossFight(floor) {
   if (seal && !gameState.seals.includes(seal)) {
     gameState.seals.push(seal);
     appendCombatLog(`★ Seal Gemstone recovered: ${seal.toUpperCase()}!`);
+    // Dave's Soul Fragment: all spells cost 0 MP for the rest of this floor
+    // (unless Sprinkles sold the ruby, which severs Dave's connection)
+    if (gameState.flags.rubyKept !== false) {
+      gameState.flags.soulFragmentFloor = floor;
+      appendCombatLog(`✦ Dave's Soul Fragment pulses — all spells cost 0 MP this floor!`);
+    }
   }
 
   gameState.party.forEach(m => { delete m._defending; delete m._defBonus; });
