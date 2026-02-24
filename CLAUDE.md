@@ -17,7 +17,7 @@ Dark fantasy party-based browser dungeon crawler inspired by Wizardry. Plain HTM
 - [ ] Phase 3 — Content & Systems
   - [x] Step 12 — Mini-bosses + Xarrath scripted encounters (floors 2 & 4)
   - [x] Step 13 — Items, shared inventory, merchant NPC (floors 1, 3, 5)
-  - [ ] Step 14 — Spells + MP system (Dave, Arlo, Unpickled)
+  - [x] Step 14 — Spells + MP system (Dave, Arlo, Unpickled)
   - [ ] Step 15 — Special abilities for all 7 characters
   - [ ] Step 16 — Seal gemstone passive bonuses + Dave's Soul Fragment
   - [ ] Step 17 — Monster drops + treasure chests (chestsOpened tracking)
@@ -101,11 +101,12 @@ scores (id, user_id, username, character, floors_reached, days_remaining, good_e
 
 ## Phase 3 Starting Point (next session)
 
-Next up: **Step 14** — Spells + MP system for Dave, Arlo, Unpickled
+Next up: **Step 15** — Special abilities for all 7 characters
 
-- Spells already defined in SPELLS constant; basic resolution exists in resolvePartyActions
-- Need: spell target selection (damage vs heal vs stun vs blind vs dragon)
-- Need: Turn Undead stun working properly against undead enemies
-- Need: Holy Light dealing 2d8 to dragon-type + healing self 4 HP
-- Need: Shadow Bolt applying blind status correctly (currently partially done)
-- Casters: Dave (Cleric), Arlo (Cleric), Unpickled (Necromancer)
+- Chad — Dragonfire Rage: already implemented (double damage, costs 3 HP)
+- Vendella — Dragon Claw Strike: already implemented (+5 vs dragon); needs upgrade path (+8 after finding Ancestral Weapon cache on Floor 3)
+- Fiona — Celestial Armor: already implemented (party +3 DEF); needs once-per-floor enforcement
+- Sprinkles — Shadow Strike: already implemented (3× dmg round 1); needs Ruby Choice upgrade (twice per combat if ruby kept)
+- Dave — Soul Fragment: implemented in Step 14 (0 MP for floor after seal); disabled if ruby sold
+- Arlo — Star Sight: stub only — needs full map reveal on current floor; once per dungeon
+- Unpickled — Phylactery Sense: stub only — needs WARM/HOT/BURNING HUD indicator on Floor 5
